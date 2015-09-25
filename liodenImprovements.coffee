@@ -10,7 +10,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
-// @grant        GM_addStyle
+// @grant        none
 // ==/UserScript==
 ###
 
@@ -23,43 +23,35 @@ Hunting:
 ###
 
 # Settings {{{1
-HUNT_BLINK_TIMEOUT = 500
+# When searching for only a certain currency.
+MAX_PRICE_MAX = '9999999999'
 
-# Code {{{1
-GM_addStyle """
-    /* Make the top bar slimmer. */
-    .main { margin-top: 10px; }
+# Search branches {{{1
+if urlMatches new RegExp '/search_branches\\.php', 'i'
+    prices      = findMatches('input[name=maxprice]',  1, 1).parent()
+    pricesDecor = findMatches('input[name=maxprice2]', 1, 1).parent()
 
-    /*
-     * Remove the Lioden logo since I can't figure out how to shrink it,
-     * and it's taking up too much space on the page. It overlaps the veeery
-     * top bar, with the link to the wiki and forums and stuff.
-     *
-     * TODO: Figure out how to just shrink it instead of flat-out removing it.
-     */
-    .navbar-brand > img { display: none; }
-"""
+    for [parent, inputBaseName] in [[prices, 'maxprice'], [pricesDecor, 'maxprice2']]
+        # Remove SB and GB text.
+        # TODO: Doesn't work.
+        parent.filter(-> this.nodeType == 3).remove()
 
-if urlMatches new RegExp '/hunting\\.php', 'i'
-    minutesLeft = findMatches('div.center > p', 0, 1).text()
-    getResults  = findMatches 'input[name=get_results', 0, 1
+        # inputBaseName is just an overly complicated way of saying that the
+        # input's names are either going to start with maxprice or maxprice2.
+        sb = parent.children "input[type=text][name=#{inputBaseName}]"
+        gb = parent.children "input[type=text][name=#{inputBaseName}c]"
 
-    if minutesLeft.length
-        minutesLeft = (/([0-9]+) minutes/.exec minutesLeft)[1]
-        minutesLeft = safeParseInt minutesLeft
-        console.log minutesLeft, 'minutes remaining.'
+        sbLink = sb.after "<a href='javascript:void(0)'> SB</a>"
+        gbLink = gb.after "<a href='javascript:void(0)'> GB</a>"
 
-        wait = (minutesLeft + 1) * 60 * 1000
-        console.log "Reloading in #{wait} ms..."
-        setTimeout_ wait, -> location.reload()
-    else if getResults.length
-        blinker = setInterval((->
-            if document.title == 'Ready!'
-                document.title = '!!!!!!!!!!!!!!!!'
+        makeHandler = (us, them) -> ->
+            # TODO: Never called.
+            console.log "Handler called on:", us, "them:", them
+            if us.val().length
+                us.val ''
             else
-                document.title = 'Ready!'
-        ), HUNT_BLINK_TIMEOUT)
+                us.val   MAX_PRICE_MAX
+                them.val ''
 
-        window.onfocus = ->
-            clearInterval blinker
-            document.title = 'Ready!'
+        sbLink.click makeHandler sb, gb
+        gbLink.click makeHandler gb, sb

@@ -11,7 +11,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
-// @grant        GM_addStyle
+// @grant        none
 // ==/UserScript==
  */
 
@@ -22,35 +22,35 @@ General:
 Hunting:
 - Automatically reloads flashes the tab when your hunt is finished.
  */
-var HUNT_BLINK_TIMEOUT, blinker, getResults, minutesLeft, wait;
+var MAX_PRICE_MAX, gb, gbLink, i, inputBaseName, len, makeHandler, parent, prices, pricesDecor, ref, ref1, sb, sbLink;
 
-HUNT_BLINK_TIMEOUT = 500;
+MAX_PRICE_MAX = '9999999999';
 
-GM_addStyle("/* Make the top bar slimmer. */\n.main { margin-top: 10px; }\n\n/*\n * Remove the Lioden logo since I can't figure out how to shrink it,\n * and it's taking up too much space on the page. It overlaps the veeery\n * top bar, with the link to the wiki and forums and stuff.\n *\n * TODO: Figure out how to just shrink it instead of flat-out removing it.\n */\n.navbar-brand > img { display: none; }");
-
-if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
-  minutesLeft = findMatches('div.center > p', 0, 1).text();
-  getResults = findMatches('input[name=get_results', 0, 1);
-  if (minutesLeft.length) {
-    minutesLeft = (/([0-9]+) minutes/.exec(minutesLeft))[1];
-    minutesLeft = safeParseInt(minutesLeft);
-    console.log(minutesLeft, 'minutes remaining.');
-    wait = (minutesLeft + 1) * 60 * 1000;
-    console.log("Reloading in " + wait + " ms...");
-    setTimeout_(wait, function() {
-      return location.reload();
-    });
-  } else if (getResults.length) {
-    blinker = setInterval((function() {
-      if (document.title === 'Ready!') {
-        return document.title = '!!!!!!!!!!!!!!!!';
-      } else {
-        return document.title = 'Ready!';
-      }
-    }), HUNT_BLINK_TIMEOUT);
-    window.onfocus = function() {
-      clearInterval(blinker);
-      return document.title = 'Ready!';
+if (urlMatches(new RegExp('/search_branches\\.php', 'i'))) {
+  prices = findMatches('input[name=maxprice]', 1, 1).parent();
+  pricesDecor = findMatches('input[name=maxprice2]', 1, 1).parent();
+  ref = [[prices, 'maxprice'], [pricesDecor, 'maxprice2']];
+  for (i = 0, len = ref.length; i < len; i++) {
+    ref1 = ref[i], parent = ref1[0], inputBaseName = ref1[1];
+    parent.filter(function() {
+      return this.nodeType === 3;
+    }).remove();
+    sb = parent.children("input[type=text][name=" + inputBaseName + "]");
+    gb = parent.children("input[type=text][name=" + inputBaseName + "c]");
+    sbLink = sb.after("<a href='javascript:void(0)'> SB</a>");
+    gbLink = gb.after("<a href='javascript:void(0)'> GB</a>");
+    makeHandler = function(us, them) {
+      return function() {
+        console.log("Handler called on:", us, "them:", them);
+        if (us.val().length) {
+          return us.val('');
+        } else {
+          us.val(MAX_PRICE_MAX);
+          return them.val('');
+        }
+      };
     };
+    sbLink.click(makeHandler(sb, gb));
+    gbLink.click(makeHandler(gb, sb));
   }
 }
