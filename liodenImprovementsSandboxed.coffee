@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboexed portion of the script.
 // @namespace    ahto
-// @version      0.0
+// @version      0.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -31,6 +31,34 @@ GM_addStyle """
      */
     .navbar-brand > img { display: none; }
 """
+
+# Navbar {{{1
+navbar   = $('.nav.visible-lg')
+toplinks = $('.toplinks')
+logout   = toplinks.find('a[href="/logout.php"]')
+
+# Move stuff to toplinks. {{{2
+moveToToplinks = (page, linkText) ->
+    link = navbar.find("a[href='#{page}']").parent()
+    link.remove()
+    link.find('a').text linkText
+    logout.before link
+
+moveToToplinks '/oasis.php',  'Oasis'
+moveToToplinks '/boards.php', 'Chatter'
+moveToToplinks '/news.php',   'News'
+moveToToplinks '/event.php',  'Event'
+moveToToplinks '/faq.php',    'FAQ'
+
+# Create new navbar items. {{{2
+newNavbarItem = (page, linkText) ->
+    navbar.append "<li><a href='#{page}'>#{linkText}</a></li>"
+
+newNavbarItem '/hunting.php',          'HUNTING'
+newNavbarItem '/exploring.php',        'EXPLORING'
+newNavbarItem '/branch.php',           'BRANCH'
+newNavbarItem '/search_branches.php',  'BRANCHES'
+newNavbarItem '/territory_map.php',    'TERRITORIES'
 
 # Hunting {{{1
 if urlMatches new RegExp '/hunting\\.php', 'i'

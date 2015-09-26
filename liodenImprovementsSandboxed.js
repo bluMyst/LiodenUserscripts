@@ -7,18 +7,56 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboexed portion of the script.
 // @namespace    ahto
-// @version      0.0
+// @version      0.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
 // @grant        GM_addStyle
 // ==/UserScript==
  */
-var HUNT_BLINK_TIMEOUT, blinker, getResults, minutesLeft, wait;
+var HUNT_BLINK_TIMEOUT, blinker, getResults, logout, minutesLeft, moveToToplinks, navbar, newNavbarItem, toplinks, wait;
 
 HUNT_BLINK_TIMEOUT = 500;
 
 GM_addStyle("/* Make the top bar slimmer. */\n.main { margin-top: 10px; }\n\n/*\n * Remove the Lioden logo since I can't figure out how to shrink it,\n * and it's taking up too much space on the page. It overlaps the veeery\n * top bar, with the link to the wiki and forums and stuff.\n *\n * TODO: Figure out how to just shrink it instead of flat-out removing it.\n */\n.navbar-brand > img { display: none; }");
+
+navbar = $('.nav.visible-lg');
+
+toplinks = $('.toplinks');
+
+logout = toplinks.find('a[href="/logout.php"]');
+
+moveToToplinks = function(page, linkText) {
+  var link;
+  link = navbar.find("a[href='" + page + "']").parent();
+  link.remove();
+  link.find('a').text(linkText);
+  return logout.before(link);
+};
+
+moveToToplinks('/oasis.php', 'Oasis');
+
+moveToToplinks('/boards.php', 'Chatter');
+
+moveToToplinks('/news.php', 'News');
+
+moveToToplinks('/event.php', 'Event');
+
+moveToToplinks('/faq.php', 'FAQ');
+
+newNavbarItem = function(page, linkText) {
+  return navbar.append("<li><a href='" + page + "'>" + linkText + "</a></li>");
+};
+
+newNavbarItem('/hunting.php', 'HUNTING');
+
+newNavbarItem('/exploring.php', 'EXPLORING');
+
+newNavbarItem('/branch.php', 'BRANCH');
+
+newNavbarItem('/search_branches.php', 'BRANCHES');
+
+newNavbarItem('/territory_map.php', 'TERRITORIES');
 
 if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
   minutesLeft = findMatches('div.center > p', 0, 1).text();

@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         Lioden Improvements
 // @description  Adds various improvements to the game Lioden.
 // @namespace    ahto
-// @version      0.0
+// @version      0.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -26,6 +26,7 @@ Hunting:
 # When searching for only a certain currency.
 MAX_PRICE_MAX = '9999999999'
 
+###
 # Search branches {{{1
 if urlMatches new RegExp '/search_branches\\.php', 'i'
     prices      = findMatches('input[name=maxprice]',  1, 1).parent()
@@ -55,3 +56,4 @@ if urlMatches new RegExp '/search_branches\\.php', 'i'
 
         sbLink.click makeHandler sb, gb
         gbLink.click makeHandler gb, sb
+###
