@@ -14,14 +14,6 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @grant        none
 // ==/UserScript==
  */
-
-/* Features and changes {{{1
-General:
-- Made the second-to-top bar a little slimmer.
-
-Hunting:
-- Automatically reloads flashes the tab when your hunt is finished.
- */
 var MAX_PRICE_MAX;
 
 MAX_PRICE_MAX = '9999999999';

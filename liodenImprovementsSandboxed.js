@@ -7,18 +7,38 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      0.1
+// @version      1.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
 // @grant        GM_addStyle
 // ==/UserScript==
  */
-var HUNT_BLINK_TIMEOUT, blinker, getResults, logout, minutesLeft, moveToToplinks, navbar, newNavbarItem, toplinks, wait;
+
+/* Features and changes {{{1
+General:
+- Made the second-to-top bar a little slimmer.
+
+Hunting:
+- Automatically reloads and flashes the tab when your hunt is finished.
+
+Den:
+- Can automatically play with all lionesses.
+ */
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, getResults, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newNavbarItem, setHumanTimeout, toplinks, wait,
+  slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
 
+HUMAN_TIMEOUT_MIN = 200;
+
+HUMAN_TIMEOUT_MAX = 1000;
+
 GM_addStyle("/* Make the top bar slimmer. */\n.main { margin-top: 10px; }\n\n/*\n * Remove the Lioden logo since I can't figure out how to shrink it,\n * and it's taking up too much space on the page. It overlaps the veeery\n * top bar, with the link to the wiki and forums and stuff.\n *\n * TODO: Figure out how to just shrink it instead of flat-out removing it.\n */\n.navbar-brand > img { display: none; }");
+
+setHumanTimeout = function(f) {
+  return setTimeout_(randInt(HUMAN_TIMEOUT_MIN, HUMAN_TIMEOUT_MAX), f);
+};
 
 navbar = $('.nav.visible-lg');
 
@@ -83,4 +103,95 @@ if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
       return document.title = 'Ready!';
     };
   }
+}
+
+if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
+  LionPlayer = (function() {
+    LionPlayer.prototype.LION_URL_TO_ID = new RegExp('/lion\\.php.*[?&]id=([0-9]+)');
+
+    function LionPlayer(autoPlayLink) {
+      this.autoPlayLink = autoPlayLink;
+      this.lionIDs = [];
+      this.safeToClick = true;
+      this.autoPlayLink.click((function(_this) {
+        return function() {
+          return _this.clickListener();
+        };
+      })(this));
+    }
+
+    LionPlayer.prototype.clickListener = function() {
+      if (this.safeToClick) {
+        this.safeToClick = false;
+        this.updateLionIDs();
+        return this.play();
+      }
+    };
+
+    LionPlayer.prototype.getLionID = function(lionLink) {
+      var id, url;
+      url = lionLink.attr('href');
+      id = this.LION_URL_TO_ID.exec(url)[1];
+      return id;
+    };
+
+    LionPlayer.prototype.updateLionIDs = function() {
+      var i, lionLinks;
+      lionLinks = $('a[href^="/lion.php?id="]');
+      return this.lionIDs = (function() {
+        var j, len, results;
+        results = [];
+        for (j = 0, len = lionLinks.length; j < len; j++) {
+          i = lionLinks[j];
+          results.push(this.getLionID($(i)));
+        }
+        return results;
+      }).call(this);
+    };
+
+    LionPlayer.prototype.play = function(arg, playedWith, length) {
+      var id, ids, recurse, ref;
+      ref = arg != null ? arg : this.lionIDs, id = ref[0], ids = 2 <= ref.length ? slice.call(ref, 1) : [];
+      if (playedWith == null) {
+        playedWith = 0;
+      }
+      if (length == null) {
+        length = ids.length + 1;
+      }
+      this.autoPlayLink.text("Loading... (" + playedWith + "/" + length + ")");
+      recurse = (function(_this) {
+        return function() {
+          playedWith++;
+          if (ids.length) {
+            return setHumanTimeout(function() {
+              return _this.play(ids, playedWith, length);
+            });
+          } else {
+            return _this.autoPlayLink.text("Done! (" + playedWith + "/" + length + ")");
+          }
+        };
+      })(this);
+      return $.get("/lion.php?id=" + id).done((function(_this) {
+        return function(response) {
+          if ($(response).find('input[value=Interact]').length) {
+            return $.post("/lion.php?id=" + id, {
+              action: 'play',
+              interact: 'Interact'
+            }).done(function(response) {
+              console.log("Played with " + id + " successfully.");
+              return recurse();
+            });
+          } else {
+            console.log("Couldn't play with " + id + "; probably on cooldown.");
+            return recurse();
+          }
+        };
+      })(this));
+    };
+
+    return LionPlayer;
+
+  })();
+  $('a[href^="/lionoverview.php"]').parent().after("<th style=\"text-align:center!important;\"><a href=\"javascript:void(0)\" id=autoPlay>Play with all.</a></th>");
+  lionPlayer = new LionPlayer($('#autoPlay'));
 }

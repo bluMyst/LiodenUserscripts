@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      0.1
+// @version      1.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -14,8 +14,23 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // ==/UserScript==
 ###
 
+### Features and changes {{{1
+General:
+- Made the second-to-top bar a little slimmer.
+
+Hunting:
+- Automatically reloads and flashes the tab when your hunt is finished.
+
+Den:
+- Can automatically play with all lionesses.
+###
+
 # Settings {{{1
 HUNT_BLINK_TIMEOUT = 500
+
+# Certain actions are done with a random time delay to avoid looking like a bot.
+HUMAN_TIMEOUT_MIN =  200
+HUMAN_TIMEOUT_MAX = 1000
 
 # CSS {{{1
 GM_addStyle """
@@ -31,6 +46,10 @@ GM_addStyle """
      */
     .navbar-brand > img { display: none; }
 """
+
+# Functions and classes {{{1
+setHumanTimeout = (f) ->
+    setTimeout_(randInt(HUMAN_TIMEOUT_MIN, HUMAN_TIMEOUT_MAX), f)
 
 # Navbar {{{1
 navbar   = $('.nav.visible-lg')
@@ -84,3 +103,60 @@ if urlMatches new RegExp '/hunting\\.php', 'i'
         window.onfocus = ->
             clearInterval blinker
             document.title = 'Ready!'
+
+# Den {{{1
+if urlMatches new RegExp '/territory\\.php', 'i'
+    # Auto-play {{{2
+    class LionPlayer
+        LION_URL_TO_ID: new RegExp '/lion\\.php.*[?&]id=([0-9]+)'
+
+        constructor: (@autoPlayLink) ->
+            @lionIDs = []
+
+            # If @autoPlayLink can be safely clicked.
+            @safeToClick = true
+
+            @autoPlayLink.click =>
+                @clickListener()
+
+        clickListener: () ->
+            if @safeToClick
+                @safeToClick = false
+                @updateLionIDs()
+                @play()
+
+        getLionID: (lionLink) ->
+            url = lionLink.attr 'href'
+            id = @LION_URL_TO_ID.exec(url)[1]
+            return id
+
+        updateLionIDs: () ->
+            lionLinks = $ 'a[href^="/lion.php?id="]'
+            @lionIDs  = (@getLionID $ i for i in lionLinks)
+
+        play: ([id, ids...]=@lionIDs, playedWith=0, length=ids.length+1) ->
+            @autoPlayLink.text "Loading... (#{playedWith}/#{length})"
+
+            recurse = =>
+                playedWith++
+                if ids.length
+                    setHumanTimeout =>
+                        @play ids, playedWith, length
+                else
+                    @autoPlayLink.text "Done! (#{playedWith}/#{length})"
+
+            $.get("/lion.php?id=#{id}").done (response) =>
+                if $(response).find('input[value=Interact]').length
+                    $.post("/lion.php?id=#{id}", {action:'play', interact:'Interact'})
+                    .done (response) =>
+                        console.log "Played with #{id} successfully."
+                        recurse()
+                else
+                    console.log "Couldn't play with #{id}; probably on cooldown."
+                    recurse()
+
+    $('a[href^="/lionoverview.php"]').parent().after """
+        <th style="text-align:center!important;"><a href="javascript:void(0)" id=autoPlay>Play with all.</a></th>
+    """
+
+    lionPlayer = new LionPlayer $ '#autoPlay'
