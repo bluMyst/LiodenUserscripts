@@ -4,7 +4,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 
 // ==UserScript==
 // @name         (Sandboxed) Lioden Improvements
-// @description  Adds various improvements to the game Lioden. Sandboexed portion of the script.
+// @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
 // @version      0.1
 // @include      http://*.lioden.com/*
