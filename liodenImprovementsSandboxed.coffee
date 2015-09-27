@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      1.0
+// @version      2.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -17,6 +17,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 ### Features and changes {{{1
 General:
 - Made the second-to-top bar a little slimmer.
+- Added significantly more quickly-accessible links, and made the site overall faster and easier to use.
 
 Hunting:
 - Automatically reloads and flashes the tab when your hunt is finished.
@@ -73,11 +74,54 @@ moveToToplinks '/faq.php',    'FAQ'
 newNavbarItem = (page, linkText) ->
     navbar.append "<li><a href='#{page}'>#{linkText}</a></li>"
 
-newNavbarItem '/hunting.php',          'HUNTING'
-newNavbarItem '/exploring.php',        'EXPLORING'
-newNavbarItem '/branch.php',           'BRANCH'
-newNavbarItem '/search_branches.php',  'BRANCHES'
-newNavbarItem '/territory_map.php',    'TERRITORIES'
+newNavbarItem '/hunting.php',          'Hunting'
+newNavbarItem '/exploring.php',        'Exploring'
+newNavbarItem '/branch.php',           'Branch'
+newNavbarItem '/search_branches.php',  'Branches'
+newNavbarItem '/territory_map.php',    'Territories'
+
+# Navbar dropdowns. {{{3
+# TODO: Background color that adapts to CSS (night vs day and user CSS).
+GM_addStyle """
+    ul li ul.dropdown {
+        min-width: 125px;
+        background: #9FAEB5;
+        padding-left: 10px;
+        padding-bottom: 5px;
+
+        display: none;
+        position: absolute;
+        z-index: 999;
+        left: 0;
+    }
+
+    ul li ul.dropdown li {
+        display: block;
+    }
+
+    /* Display the dropdown on hover. */
+    ul li:hover ul.dropdown {
+        display: block;
+    }
+"""
+
+navbar.find('a[href="/exploring.php"]').after """
+    <ul class=dropdown id=exploring_areas>
+    </ul>
+"""
+
+newExploringArea = (id, linkText) ->
+    $('#exploring_areas').append """
+        <li><a href='/explorearea.php?id=#{id}'>#{linkText}</a></li>
+    """
+
+newExploringArea 1, '(1) Temperate S'
+newExploringArea 2, '(2-5) Shrubland'
+newExploringArea 3, '(6-10) Trpcl Forest'
+newExploringArea 4, '(11-15) Dry S'
+newExploringArea 5, '(16-20) Rocky Hills'
+newExploringArea 6, '(26-30) Marshl.'
+newExploringArea 7, '(31+) Waterhole'
 
 # Hunting {{{1
 if urlMatches new RegExp '/hunting\\.php', 'i'
