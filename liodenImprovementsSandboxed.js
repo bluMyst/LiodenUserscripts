@@ -26,7 +26,7 @@ Hunting:
 Den:
 - Can automatically play with all lionesses.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, exploringDropdownLinks, getResults, id, linkText, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newDropdown, newNavbarItem, setHumanTimeout, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, getResults, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newDropdown, newNavbarItem, setHumanTimeout, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -65,27 +65,15 @@ moveToToplinks('/event.php', 'Event');
 
 moveToToplinks('/faq.php', 'FAQ');
 
-newNavbarItem = function(page, linkText) {
-  return navbar.append("<li><a href='" + page + "'>" + linkText + "</a></li>");
-};
-
-newNavbarItem('/hunting.php', 'Hunting');
-
-newNavbarItem('/exploring.php', 'Exploring');
-
-newNavbarItem('/branch.php', 'Branch');
-
-newNavbarItem('/search_branches.php', 'Branches');
-
-newNavbarItem('/territory_map.php', 'Territories');
-
 GM_addStyle("ul li ul.dropdown {\n    min-width: 125px;\n    background: #9FAEB5;\n    padding-left: 10px;\n    padding-bottom: 5px;\n\n    display: none;\n    position: absolute;\n    z-index: 999;\n    left: 0;\n}\n\nul li ul.dropdown li {\n    display: block;\n}\n\n/* Display the dropdown on hover. */\nul li:hover ul.dropdown {\n    display: block;\n}");
 
 newDropdown = function(menuItem, dropdownLinks) {
   var dropdown, j, len, link, linkText, ref, results;
-  console.log('Appending dropdown to', menuItem);
+  if (typeof menuItem === 'string') {
+    menuItem = navbar.find("a[href='" + menuItem + "']").parent();
+  }
   dropdown = $("<ul class=dropdown></ul>");
-  menuItem.after(dropdown);
+  menuItem.append(dropdown);
   results = [];
   for (j = 0, len = dropdownLinks.length; j < len; j++) {
     ref = dropdownLinks[j], link = ref[0], linkText = ref[1];
@@ -94,21 +82,26 @@ newDropdown = function(menuItem, dropdownLinks) {
   return results;
 };
 
-exploringDropdownLinks = [[1, '(1) Temperate S'], [2, '(2-5) Shrubland'], [3, '(6-10) Trpcl Forest'], [4, '(11-15) Dry S'], [5, '(16-20) Rocky Hills'], [6, '(26-30) Marshl.'], [7, '(31+) Waterhole']];
-
-exploringDropdownLinks = (function() {
-  var j, len, ref, results;
-  results = [];
-  for (j = 0, len = exploringDropdownLinks.length; j < len; j++) {
-    ref = exploringDropdownLinks[j], id = ref[0], linkText = ref[1];
-    results.push(["/explorearea.php?id=" + id, linkText]);
+newNavbarItem = function(page, linkText, dropdownLinks) {
+  var navbarItem;
+  navbarItem = $("<li><a href='" + page + "'>" + linkText + "</a></li>");
+  navbar.append(navbarItem);
+  if (dropdownLinks != null) {
+    return newDropdown(navbarItem, dropdownLinks);
   }
-  return results;
-})();
+};
 
-newDropdown(navbar.find('a[href="/exploring.php"]'), exploringDropdownLinks);
+newDropdown('/hoard.php', [['/hoard.php?type=Food', 'Food'], ['/hoard.php?type=Amusement', 'Amusement'], ['/hoard.php?type=Decoration', 'Decoration'], ['/hoard.php?type=Background', 'Background'], ['/hoard.php?type=Other', 'Other'], ['/hoard.php?type=Buried', 'Buried'], ['/hoard.php?type=Bundles', 'Bundles'], ['/hoard-organisation.php', 'Organisation']]);
 
-newDropdown(navbar.find('a[href="/hoard.php"]'), [['/hoard.php?type=Food', 'Food'], ['/hoard.php?type=Amusement', 'Amusement'], ['/hoard.php?type=Decoration', 'Decoration'], ['/hoard.php?type=Background', 'Background'], ['/hoard.php?type=Other', 'Other'], ['/hoard.php?type=Buried', 'Buried'], ['/hoard.php?type=Bundles', 'Bundles'], ['/hoard-organisation.php', 'Organisation']]);
+newNavbarItem('/hunting.php', 'Hunting');
+
+newNavbarItem('/exploring.php', 'Exploring', [['/explorearea.php?id=1', '(1) Temperate S'], ['/explorearea.php?id=2', '(2-5) Shrubland'], ['/explorearea.php?id=3', '(6-10) Trpcl Forest'], ['/explorearea.php?id=4', '(11-15) Dry S'], ['/explorearea.php?id=5', '(16-20) Rocky Hills'], ['/explorearea.php?id=6', '(26-30) Marshl.'], ['/explorearea.php?id=7', '(31+) Waterhole']]);
+
+newNavbarItem('/branch.php', 'Branches', [['/branch.php', 'My Branch'], ['/search_branches.php', 'Search']]);
+
+newNavbarItem('/territory_map.php', 'Territories');
+
+newNavbarItem('/scryingstone.php', 'Scrying Stone', [['/wardrobe.php', 'Wardrobe'], ['/falcons-eye.php', "Falcon's Eye"]]);
 
 if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
   minutesLeft = findMatches('div.center > p', 0, 1).text();
@@ -161,7 +154,7 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
     };
 
     LionPlayer.prototype.getLionID = function(lionLink) {
-      var url;
+      var id, url;
       url = lionLink.attr('href');
       id = this.LION_URL_TO_ID.exec(url)[1];
       return id;

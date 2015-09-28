@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      3.1
+// @version      4.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -70,17 +70,7 @@ moveToToplinks '/news.php',   'News'
 moveToToplinks '/event.php',  'Event'
 moveToToplinks '/faq.php',    'FAQ'
 
-# Create new navbar items. {{{2
-newNavbarItem = (page, linkText) ->
-    navbar.append "<li><a href='#{page}'>#{linkText}</a></li>"
-
-newNavbarItem '/hunting.php',          'Hunting'
-newNavbarItem '/exploring.php',        'Exploring'
-newNavbarItem '/branch.php',           'Branch'
-newNavbarItem '/search_branches.php',  'Branches'
-newNavbarItem '/territory_map.php',    'Territories'
-
-# Navbar dropdowns. {{{3
+# Add new navbar items. {{{2
 # TODO: Background color that adapts to CSS (night vs day and user CSS).
 GM_addStyle """
     ul li ul.dropdown {
@@ -106,33 +96,28 @@ GM_addStyle """
 """
 
 newDropdown = (menuItem, dropdownLinks) ->
-    console.log 'Appending dropdown to', menuItem
+    if typeof menuItem == 'string'
+        menuItem = navbar.find("a[href='#{menuItem}']").parent()
+
     dropdown = $ "<ul class=dropdown></ul>"
-    menuItem.after dropdown
+    #menuItem.after dropdown
+    menuItem.append dropdown
 
     for [link, linkText] in dropdownLinks
         dropdown.append """
             <li><a href='#{link}'>#{linkText}</a></li>
         """
 
-# Exploring dropdown. {{{4
-exploringDropdownLinks = [
-    [1, '(1) Temperate S'],
-    [2, '(2-5) Shrubland'],
-    [3, '(6-10) Trpcl Forest'],
-    [4, '(11-15) Dry S'],
-    [5, '(16-20) Rocky Hills'],
-    [6, '(26-30) Marshl.'],
-    [7, '(31+) Waterhole'],
-]
+newNavbarItem = (page, linkText, dropdownLinks) ->
+    # TODO: Integrate dropdowns into this function.
+    navbarItem =  $ "<li><a href='#{page}'>#{linkText}</a></li>"
+    navbar.append navbarItem
 
-exploringDropdownLinks = for [id, linkText] in exploringDropdownLinks
-    ["/explorearea.php?id=#{id}", linkText]
+    if dropdownLinks?
+        newDropdown navbarItem, dropdownLinks
 
-newDropdown navbar.find('a[href="/exploring.php"]'), exploringDropdownLinks
-
-# Hoard dropdown. {{{4
-newDropdown navbar.find('a[href="/hoard.php"]'), [
+# Add dropdown to the hoard navbar item.
+newDropdown '/hoard.php', [
     ['/hoard.php?type=Food',        'Food'],
     ['/hoard.php?type=Amusement',   'Amusement'],
     ['/hoard.php?type=Decoration',  'Decoration'],
@@ -141,6 +126,30 @@ newDropdown navbar.find('a[href="/hoard.php"]'), [
     ['/hoard.php?type=Buried',      'Buried'],
     ['/hoard.php?type=Bundles',     'Bundles'],
     ['/hoard-organisation.php',     'Organisation'],
+]
+
+newNavbarItem '/hunting.php', 'Hunting'
+
+newNavbarItem '/exploring.php', 'Exploring', [
+    ['/explorearea.php?id=1',  '(1) Temperate S'],
+    ['/explorearea.php?id=2',  '(2-5) Shrubland'],
+    ['/explorearea.php?id=3',  '(6-10) Trpcl Forest'],
+    ['/explorearea.php?id=4',  '(11-15) Dry S'],
+    ['/explorearea.php?id=5',  '(16-20) Rocky Hills'],
+    ['/explorearea.php?id=6',  '(26-30) Marshl.'],
+    ['/explorearea.php?id=7',  '(31+) Waterhole'],
+]
+
+newNavbarItem '/branch.php', 'Branches', [
+    ['/branch.php',           'My Branch'],
+    ['/search_branches.php',  'Search'],
+]
+
+newNavbarItem '/territory_map.php', 'Territories'
+
+newNavbarItem '/scryingstone.php', 'Scrying Stone', [
+    ['/wardrobe.php', 'Wardrobe'],
+    ['/falcons-eye.php', "Falcon's Eye"],
 ]
 
 # Hunting {{{1
