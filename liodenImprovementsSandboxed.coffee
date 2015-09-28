@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      2.0
+// @version      3.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -105,23 +105,43 @@ GM_addStyle """
     }
 """
 
-navbar.find('a[href="/exploring.php"]').after """
-    <ul class=dropdown id=exploring_areas>
-    </ul>
-"""
+newDropdown = (menuItem, dropdownLinks) ->
+    console.log 'Appending dropdown to', menuItem
+    dropdown = $ "<ul class=dropdown></ul>"
+    menuItem.after dropdown
 
-newExploringArea = (id, linkText) ->
-    $('#exploring_areas').append """
-        <li><a href='/explorearea.php?id=#{id}'>#{linkText}</a></li>
-    """
+    for [link, linkText] in dropdownLinks
+        dropdown.append """
+            <li><a href='#{link}'>#{linkText}</a></li>
+        """
 
-newExploringArea 1, '(1) Temperate S'
-newExploringArea 2, '(2-5) Shrubland'
-newExploringArea 3, '(6-10) Trpcl Forest'
-newExploringArea 4, '(11-15) Dry S'
-newExploringArea 5, '(16-20) Rocky Hills'
-newExploringArea 6, '(26-30) Marshl.'
-newExploringArea 7, '(31+) Waterhole'
+# Exploring dropdown. {{{4
+exploringDropdownLinks = [
+    [1, '(1) Temperate S'],
+    [2, '(2-5) Shrubland'],
+    [3, '(6-10) Trpcl Forest'],
+    [4, '(11-15) Dry S'],
+    [5, '(16-20) Rocky Hills'],
+    [6, '(26-30) Marshl.'],
+    [7, '(31+) Waterhole'],
+]
+
+exploringDropdownLinks = for [id, linkText] in exploringDropdownLinks
+    ["/explorearea.php?id=#{id}", linkText]
+
+newDropdown navbar.find('a[href="/exploring.php"]'), exploringDropdownLinks
+
+# Hoard dropdown. {{{4
+newDropdown navbar.find('a[href="/hoard.php"]'), [
+    ['/hoard.php?type=Food',        'Food'],
+    ['/hoard.php?type=Amusement',   'Amusement'],
+    ['/hoard.php?type=Decoration',  'Decoration'],
+    ['/hoard.php?type=Background',  'Background'],
+    ['/hoard.php?type=Other',       'Other'],
+    ['/hoard.php?type=Buried',      'Buried'],
+    ['/hoard.php?type=Bundles',     'Bundles'],
+    ['/hoad-organisation.php',      'Organisation'],
+]
 
 # Hunting {{{1
 if urlMatches new RegExp '/hunting\\.php', 'i'
