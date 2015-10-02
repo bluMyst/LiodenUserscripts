@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      5.0
+// @version      5.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -65,7 +65,7 @@ moveToToplinks('/event.php', 'Event');
 
 moveToToplinks('/faq.php', 'FAQ');
 
-GM_addStyle("ul li ul.dropdown {\n    min-width: 125px;\n    background: #9FAEB5;\n    padding-left: 10px;\n    padding-bottom: 5px;\n\n    display: none;\n    position: absolute;\n    z-index: 999;\n    left: 0;\n}\n\nul li ul.dropdown li {\n    display: block;\n}\n\n/* Display the dropdown on hover. */\nul li:hover ul.dropdown {\n    display: block;\n}");
+GM_addStyle("ul li ul.dropdown {\n    min-width: 125px;\n    background: " + ($('.navbar.navbar-default').css('background')) + ";\n    padding-left: 10px;\n    padding-bottom: 5px;\n\n    display: none;\n    position: absolute;\n    z-index: 999;\n    left: 0;\n}\n\nul li ul.dropdown li {\n    display: block;\n}\n\n/* Display the dropdown on hover. */\nul li:hover ul.dropdown {\n    display: block;\n}");
 
 newDropdown = function(menuItem, dropdownLinks) {
   var dropdown, j, len, link, linkText, ref, results;

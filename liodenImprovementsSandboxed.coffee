@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      5.0
+// @version      5.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -75,7 +75,7 @@ moveToToplinks '/faq.php',    'FAQ'
 GM_addStyle """
     ul li ul.dropdown {
         min-width: 125px;
-        background: #9FAEB5;
+        background: #{$('.navbar.navbar-default').css 'background'};
         padding-left: 10px;
         padding-bottom: 5px;
 
