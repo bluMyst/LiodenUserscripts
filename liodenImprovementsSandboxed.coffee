@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      4.0
+// @version      5.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -126,6 +126,18 @@ newDropdown '/hoard.php', [
     ['/hoard.php?type=Buried',      'Buried'],
     ['/hoard.php?type=Bundles',     'Bundles'],
     ['/hoard-organisation.php',     'Organisation'],
+]
+
+newDropdown '/explore.php', [
+    ['/search.php', 'Search'],
+    ['/trading_center.php', 'Trading Center'],
+    ['/questing.php', 'Quests'],
+    ['/monkeybusiness.php', 'Monkey Shop'],
+    ['/sharpen_claws.php', 'Sharpen Claws'],
+    ['/games.php', 'Games'],
+    ['/patrol.php', 'Patrol'],
+    ['/leaders.php', 'Leaderboards'],
+    ['/special.php', 'Special Lioness'],
 ]
 
 newNavbarItem '/hunting.php', 'Hunting'
