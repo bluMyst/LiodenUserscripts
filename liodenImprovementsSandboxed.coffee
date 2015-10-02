@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      5.1
+// @version      6.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -56,6 +56,39 @@ setHumanTimeout = (f) ->
 navbar   = $('.nav.visible-lg')
 toplinks = $('.toplinks')
 logout   = toplinks.find('a[href="/logout.php"]')
+
+# Energy {{{1
+energyBar = $('div.progress:first')
+
+energyBarText = energyBar.find('div:last')
+energyBarText.css 'z-index', '2'
+
+energyBarBar  = energyBar.find('div:first')
+energyBarBar.css 'z-index', '1'
+
+# This is the worst variable name I've ever written in my life.
+energyBarChangeBar = $ """
+    <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%; background: #afc7c7;" />
+"""
+
+energyBar.append energyBarChangeBar
+
+energyUpdate = ->
+    energyPercent = /Energy: ([0-9]+)%/.exec( energyBarText.text() )[1]
+    energyPercent = parseInt energyPercent
+
+    # Updates every 15 minutes.
+    # TODO: Get the exact number of milliseconds instead of this.
+    minutes = new Date(Date.now()).getMinutes()
+    minutes = 15 - (minutes % 15)
+
+    setTimeout_ minutes*60*1000, ->
+        if energyPercent < 100 then energyPercent += 10
+        energyBarText.text "Energy: #{energyPercent}%"
+        energyBarChangeBar.css "width", "#{energyPercent}%"
+        energyUpdate()
+
+energyUpdate()
 
 # Move stuff to toplinks. {{{2
 moveToToplinks = (page, linkText) ->

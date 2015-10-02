@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      5.1
+// @version      6.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -26,7 +26,7 @@ Hunting:
 Den:
 - Can automatically play with all lionesses.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, getResults, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newDropdown, newNavbarItem, setHumanTimeout, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, getResults, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newDropdown, newNavbarItem, setHumanTimeout, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -46,6 +46,38 @@ navbar = $('.nav.visible-lg');
 toplinks = $('.toplinks');
 
 logout = toplinks.find('a[href="/logout.php"]');
+
+energyBar = $('div.progress:first');
+
+energyBarText = energyBar.find('div:last');
+
+energyBarText.css('z-index', '2');
+
+energyBarBar = energyBar.find('div:first');
+
+energyBarBar.css('z-index', '1');
+
+energyBarChangeBar = $("<div class=\"progress-bar progress-bar-warning\" role=\"progressbar\" aria-valuenow=\"60\" aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width: 0%; background: #afc7c7;\" />");
+
+energyBar.append(energyBarChangeBar);
+
+energyUpdate = function() {
+  var energyPercent, minutes;
+  energyPercent = /Energy: ([0-9]+)%/.exec(energyBarText.text())[1];
+  energyPercent = parseInt(energyPercent);
+  minutes = new Date(Date.now()).getMinutes();
+  minutes = 15 - (minutes % 15);
+  return setTimeout_(minutes * 60 * 1000, function() {
+    if (energyPercent < 100) {
+      energyPercent += 10;
+    }
+    energyBarText.text("Energy: " + energyPercent + "%");
+    energyBarChangeBar.css("width", energyPercent + "%");
+    return energyUpdate();
+  });
+};
+
+energyUpdate();
 
 moveToToplinks = function(page, linkText) {
   var link;
