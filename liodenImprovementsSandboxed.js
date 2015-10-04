@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      7.0
+// @version      7.1
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -171,7 +171,7 @@ if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
 
 if (urlMatches(new RegExp('/lion\\.php', 'i'))) {
   namePlateClone = findMatches('h1', 1, 1).clone();
-  lionImageClone = findMatches('div.alert + br + div', 1, 1).clone();
+  lionImageClone = findMatches('body > div.container.main > div:nth-child(2) > div.col-md-9.col-xs-12 > center > div:nth-child(5)', 1, 1).clone();
   chaseButtonTable = findMatches('div.col-xs-12.col-md-4', 1, 1);
   chaseButtonTable.before(namePlateClone, lionImageClone, '<br>');
 }
