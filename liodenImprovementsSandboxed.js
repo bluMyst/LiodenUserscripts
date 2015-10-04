@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      7.2
+// @version      7.3
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -30,8 +30,7 @@ Den:
 Lion view:
 - Can see lion name and picture right next to the chase buttons.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, lionImageClone, lionPlayer, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, tables, toplinks, wait,
-  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, lionImageClone, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, tables, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -177,7 +176,7 @@ if (urlMatches(new RegExp('/lion\\.php', 'i'))) {
 }
 
 if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
-  if (indexOf.call(document.location.search, 'id') < 0) {
+  if (!(urlMatches(/[?&]id=/i))) {
     GM_addStyle("/* Make the tables a little closer together. Website default 20px. */\n.table { margin-bottom: 10px; }");
     tables = $('div.container.main center table.table');
     ref = (function() {
@@ -190,94 +189,98 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
       return results;
     })(), aboutKing = ref[0], aboutPlayer = ref[1], pride = ref[2], etc = 4 <= ref.length ? slice.call(ref, 3) : [];
     aboutKing.after(pride);
+    LionPlayer = (function() {
+      var lionPlayer;
+
+      LionPlayer.prototype.LION_URL_TO_ID = new RegExp('/lion\\.php.*[?&]id=([0-9]+)');
+
+      function LionPlayer(autoPlayLink) {
+        this.autoPlayLink = autoPlayLink;
+        this.lionIDs = [];
+        this.safeToClick = true;
+        this.autoPlayLink.click((function(_this) {
+          return function() {
+            return _this.clickListener();
+          };
+        })(this));
+      }
+
+      LionPlayer.prototype.clickListener = function() {
+        if (this.safeToClick) {
+          this.safeToClick = false;
+          this.updateLionIDs();
+          return this.play();
+        }
+      };
+
+      LionPlayer.prototype.getLionID = function(lionLink) {
+        var id, url;
+        url = lionLink.attr('href');
+        id = this.LION_URL_TO_ID.exec(url)[1];
+        return id;
+      };
+
+      LionPlayer.prototype.updateLionIDs = function() {
+        var lionLinks;
+        lionLinks = $('a[href^="/lion.php?id="]');
+        return this.lionIDs = (function() {
+          var j, len, results;
+          results = [];
+          for (j = 0, len = lionLinks.length; j < len; j++) {
+            i = lionLinks[j];
+            results.push(this.getLionID($(i)));
+          }
+          return results;
+        }).call(this);
+      };
+
+      LionPlayer.prototype.play = function(arg, playedWith, length) {
+        var id, ids, recurse, ref1;
+        ref1 = arg != null ? arg : this.lionIDs, id = ref1[0], ids = 2 <= ref1.length ? slice.call(ref1, 1) : [];
+        if (playedWith == null) {
+          playedWith = 0;
+        }
+        if (length == null) {
+          length = ids.length + 1;
+        }
+        this.autoPlayLink.text("Loading... (" + playedWith + "/" + length + ")");
+        recurse = (function(_this) {
+          return function() {
+            playedWith++;
+            if (ids.length) {
+              return setHumanTimeout(function() {
+                return _this.play(ids, playedWith, length);
+              });
+            } else {
+              return _this.autoPlayLink.text("Done! (" + playedWith + "/" + length + ")");
+            }
+          };
+        })(this);
+        return $.get("/lion.php?id=" + id).done((function(_this) {
+          return function(response) {
+            if ($(response).find('input[value=Interact]').length) {
+              return $.post("/lion.php?id=" + id, {
+                action: 'play',
+                interact: 'Interact'
+              }).done(function(response) {
+                console.log("Played with " + id + " successfully.");
+                return recurse();
+              });
+            } else {
+              console.log("Couldn't play with " + id + "; probably on cooldown.");
+              return recurse();
+            }
+          };
+        })(this));
+      };
+
+      $('a[href^="/lionoverview.php"]').parent().after("<th style=\"text-align:center!important;\"><a href=\"javascript:void(0)\" id=autoPlay>Play with all.</a></th>");
+
+      lionPlayer = new LionPlayer($('#autoPlay'));
+
+      return LionPlayer;
+
+    })();
   }
   findMatches('h1 + br', 1, 1).remove();
-  LionPlayer = (function() {
-    LionPlayer.prototype.LION_URL_TO_ID = new RegExp('/lion\\.php.*[?&]id=([0-9]+)');
-
-    function LionPlayer(autoPlayLink) {
-      this.autoPlayLink = autoPlayLink;
-      this.lionIDs = [];
-      this.safeToClick = true;
-      this.autoPlayLink.click((function(_this) {
-        return function() {
-          return _this.clickListener();
-        };
-      })(this));
-    }
-
-    LionPlayer.prototype.clickListener = function() {
-      if (this.safeToClick) {
-        this.safeToClick = false;
-        this.updateLionIDs();
-        return this.play();
-      }
-    };
-
-    LionPlayer.prototype.getLionID = function(lionLink) {
-      var id, url;
-      url = lionLink.attr('href');
-      id = this.LION_URL_TO_ID.exec(url)[1];
-      return id;
-    };
-
-    LionPlayer.prototype.updateLionIDs = function() {
-      var lionLinks;
-      lionLinks = $('a[href^="/lion.php?id="]');
-      return this.lionIDs = (function() {
-        var j, len, results;
-        results = [];
-        for (j = 0, len = lionLinks.length; j < len; j++) {
-          i = lionLinks[j];
-          results.push(this.getLionID($(i)));
-        }
-        return results;
-      }).call(this);
-    };
-
-    LionPlayer.prototype.play = function(arg, playedWith, length) {
-      var id, ids, recurse, ref1;
-      ref1 = arg != null ? arg : this.lionIDs, id = ref1[0], ids = 2 <= ref1.length ? slice.call(ref1, 1) : [];
-      if (playedWith == null) {
-        playedWith = 0;
-      }
-      if (length == null) {
-        length = ids.length + 1;
-      }
-      this.autoPlayLink.text("Loading... (" + playedWith + "/" + length + ")");
-      recurse = (function(_this) {
-        return function() {
-          playedWith++;
-          if (ids.length) {
-            return setHumanTimeout(function() {
-              return _this.play(ids, playedWith, length);
-            });
-          } else {
-            return _this.autoPlayLink.text("Done! (" + playedWith + "/" + length + ")");
-          }
-        };
-      })(this);
-      return $.get("/lion.php?id=" + id).done((function(_this) {
-        return function(response) {
-          if ($(response).find('input[value=Interact]').length) {
-            return $.post("/lion.php?id=" + id, {
-              action: 'play',
-              interact: 'Interact'
-            }).done(function(response) {
-              console.log("Played with " + id + " successfully.");
-              return recurse();
-            });
-          } else {
-            console.log("Couldn't play with " + id + "; probably on cooldown.");
-            return recurse();
-          }
-        };
-      })(this));
-    };
-
-    return LionPlayer;
-
-  })();
-  $('a[href^="/lionoverview.php"]').parent().after("<th style=\"text-align:center!important;\"><a href=\"javascript:void(0)\" id=autoPlay>Play with all.</a></th>");
-  lionPlayer = new LionPlayer($('#autoPlay'));
 }
