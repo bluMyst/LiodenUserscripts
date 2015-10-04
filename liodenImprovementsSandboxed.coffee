@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      6.0
+// @version      7.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -24,6 +24,10 @@ Hunting:
 
 Den:
 - Can automatically play with all lionesses.
+- Table order slightly tweaked.
+
+Lion view:
+- Can see lion name and picture right next to the chase buttons.
 ###
 
 # Settings {{{1
@@ -222,8 +226,31 @@ if urlMatches new RegExp '/hunting\\.php', 'i'
             clearInterval blinker
             document.title = 'Ready!'
 
+# Lion view {{{1
+if urlMatches new RegExp '/lion\\.php', 'i'
+    namePlateClone = findMatches('h1', 1, 1).clone()
+    lionImageClone = findMatches('div.alert + br + div', 1, 1).clone()
+    chaseButtonTable = findMatches('div.col-xs-12.col-md-4', 1, 1)
+    chaseButtonTable.before namePlateClone, lionImageClone, '<br>'
+
 # Den {{{1
 if urlMatches new RegExp '/territory\\.php', 'i'
+    # Rearrange interface {{{2
+    # Check if we're looking at another user's den. In that case there'll be an
+    # 'id' parameter.
+    if 'id' not in document.location.search
+        GM_addStyle """
+            /* Make the tables a little closer together. Website default 20px. */
+            .table { margin-bottom: 10px; }
+        """
+
+        tables = $ 'div.container.main center table.table'
+        [aboutKing, aboutPlayer, pride, etc...] = ($ i for i in tables)
+        aboutKing.after pride
+
+    # Make the [X]'s Den text a little more compact.
+    findMatches('h1 + br', 1, 1).remove()
+
     # Auto-play {{{2
     class LionPlayer
         LION_URL_TO_ID: new RegExp '/lion\\.php.*[?&]id=([0-9]+)'
@@ -278,3 +305,4 @@ if urlMatches new RegExp '/territory\\.php', 'i'
     """
 
     lionPlayer = new LionPlayer $ '#autoPlay'
+

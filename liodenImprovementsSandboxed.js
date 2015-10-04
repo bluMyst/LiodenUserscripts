@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      6.0
+// @version      7.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -25,8 +25,13 @@ Hunting:
 
 Den:
 - Can automatically play with all lionesses.
+- Table order slightly tweaked.
+
+Lion view:
+- Can see lion name and picture right next to the chase buttons.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, blinker, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, getResults, lionPlayer, logout, minutesLeft, moveToToplinks, navbar, newDropdown, newNavbarItem, setHumanTimeout, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, lionImageClone, lionPlayer, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, tables, toplinks, wait,
+  indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -164,7 +169,29 @@ if (urlMatches(new RegExp('/hunting\\.php', 'i'))) {
   }
 }
 
+if (urlMatches(new RegExp('/lion\\.php', 'i'))) {
+  namePlateClone = findMatches('h1', 1, 1).clone();
+  lionImageClone = findMatches('div.alert + br + div', 1, 1).clone();
+  chaseButtonTable = findMatches('div.col-xs-12.col-md-4', 1, 1);
+  chaseButtonTable.before(namePlateClone, lionImageClone, '<br>');
+}
+
 if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
+  if (indexOf.call(document.location.search, 'id') < 0) {
+    GM_addStyle("/* Make the tables a little closer together. Website default 20px. */\n.table { margin-bottom: 10px; }");
+    tables = $('div.container.main center table.table');
+    ref = (function() {
+      var j, len, results;
+      results = [];
+      for (j = 0, len = tables.length; j < len; j++) {
+        i = tables[j];
+        results.push($(i));
+      }
+      return results;
+    })(), aboutKing = ref[0], aboutPlayer = ref[1], pride = ref[2], etc = 4 <= ref.length ? slice.call(ref, 3) : [];
+    aboutKing.after(pride);
+  }
+  findMatches('h1 + br', 1, 1).remove();
   LionPlayer = (function() {
     LionPlayer.prototype.LION_URL_TO_ID = new RegExp('/lion\\.php.*[?&]id=([0-9]+)');
 
@@ -195,7 +222,7 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
     };
 
     LionPlayer.prototype.updateLionIDs = function() {
-      var i, lionLinks;
+      var lionLinks;
       lionLinks = $('a[href^="/lion.php?id="]');
       return this.lionIDs = (function() {
         var j, len, results;
@@ -209,8 +236,8 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
     };
 
     LionPlayer.prototype.play = function(arg, playedWith, length) {
-      var id, ids, recurse, ref;
-      ref = arg != null ? arg : this.lionIDs, id = ref[0], ids = 2 <= ref.length ? slice.call(ref, 1) : [];
+      var id, ids, recurse, ref1;
+      ref1 = arg != null ? arg : this.lionIDs, id = ref1[0], ids = 2 <= ref1.length ? slice.call(ref1, 1) : [];
       if (playedWith == null) {
         playedWith = 0;
       }
