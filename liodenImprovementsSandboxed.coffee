@@ -6,11 +6,13 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      7.3
+// @version      8.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 ###
 
@@ -56,11 +58,6 @@ GM_addStyle """
 setHumanTimeout = (f) ->
     setTimeout_(randInt(HUMAN_TIMEOUT_MIN, HUMAN_TIMEOUT_MAX), f)
 
-# Navbar {{{1
-navbar   = $('.nav.visible-lg')
-toplinks = $('.toplinks')
-logout   = toplinks.find('a[href="/logout.php"]')
-
 # Energy {{{1
 energyBar = $('div.progress:first')
 
@@ -78,21 +75,67 @@ energyBarChangeBar = $ """
 energyBar.append energyBarChangeBar
 
 energyUpdate = ->
-    energyPercent = /Energy: ([0-9]+)%/.exec( energyBarText.text() )[1]
+    try
+        energyPercent = /Energy: ([0-9]+)%/.exec( energyBarText.text() )[1]
+    catch e
+        if e instanceof TypeError
+            console.log "Unable to read energy percent from #{energyBar}"
+            console.log 'Disabling energyUpdate'
+            return
+        else
+            throw e
+
     energyPercent = parseInt energyPercent
 
     # Updates every 15 minutes.
-    # TODO: Get the exact number of milliseconds instead of this.
-    minutes = new Date(Date.now()).getMinutes()
-    minutes = 15 - (minutes % 15)
+    now              = new Date(Date.now())
+    minutes          = now.getMinutes() + now.getSeconds()/60 + now.getMilliseconds()/(1000*60)
+    energyUpdateTime = new Date(now)
 
-    setTimeout_ minutes*60*1000, ->
-        if energyPercent < 100 then energyPercent += 10
+    console.log "now: #{now}"
+    console.log "minutes: #{minutes}"
+
+    energyUpdateTime.setSeconds      0
+    energyUpdateTime.setMilliseconds 0
+
+    if 0 <= minutes < 15
+        console.log "0 <= minutes < 15"
+        energyUpdateTime.setMinutes 15
+    else if 15 <= minutes < 30
+        console.log "15 <= minutes < 30"
+        energyUpdateTime.setMinutes 30
+    else if 30 <= minutes < 45
+        console.log "30 <= minutes < 45"
+        energyUpdateTime.setMinutes 45
+    else if 45 <= minutes
+        console.log "45 <= minutes"
+        energyUpdateTime.setMinutes  0
+        energyUpdateTime.setHours (now.getHours() + 1)
+
+    console.log "Target time for energy refresh is:", energyUpdateTime
+    console.log "That means we're waiting for #{(energyUpdateTime - now)/(1000*60)} minutes."
+
+    setTimeout_ (energyUpdateTime - now), ->
+        if energyPercent+10 <= 100
+            energyPercent += 10
+        else if energyPercent < 100
+            console.log "Setting energyPercent to 100, from #{energyPercent}"
+            energyPercent = 100
+
         energyBarText.text "Energy: #{energyPercent}%"
         energyBarChangeBar.css "width", "#{energyPercent}%"
-        energyUpdate()
+
+        if energyPercent <= 100
+            energyUpdate()
+        else
+            console.log 'energyPercent is > 100 so stopping energy update loop.'
 
 energyUpdate()
+
+# Navbar {{{1
+navbar   = $('.nav.visible-lg')
+toplinks = $('.toplinks')
+logout   = toplinks.find('a[href="/logout.php"]')
 
 # Move stuff to toplinks. {{{2
 moveToToplinks = (page, linkText) ->
@@ -107,8 +150,8 @@ moveToToplinks '/news.php',   'News'
 moveToToplinks '/event.php',  'Event'
 moveToToplinks '/faq.php',    'FAQ'
 
-# Add new navbar items. {{{2
-# TODO: Background color that adapts to CSS (night vs day and user CSS).
+# Add new navbar items and dropdowns. {{{2
+# Dropdown CSS {{{3
 GM_addStyle """
     ul li ul.dropdown {
         min-width: 125px;
@@ -132,7 +175,7 @@ GM_addStyle """
     }
 """
 
-newDropdown = (menuItem, dropdownLinks) ->
+newDropdown = (menuItem, dropdownLinks) -> # {{{3
     if typeof menuItem == 'string'
         menuItem = navbar.find("a[href='#{menuItem}']").parent()
 
@@ -145,7 +188,7 @@ newDropdown = (menuItem, dropdownLinks) ->
             <li><a href='#{link}'>#{linkText}</a></li>
         """
 
-newNavbarItem = (page, linkText, dropdownLinks) ->
+newNavbarItem = (page, linkText, dropdownLinks) -> # {{{3
     # TODO: Integrate dropdowns into this function.
     navbarItem =  $ "<li><a href='#{page}'>#{linkText}</a></li>"
     navbar.append navbarItem
@@ -153,7 +196,14 @@ newNavbarItem = (page, linkText, dropdownLinks) ->
     if dropdownLinks?
         newDropdown navbarItem, dropdownLinks
 
-# Add dropdown to the hoard navbar item.
+# Actually make the dropdowns and links. {{{3
+if (kingID = GM_getValue 'kingID')?
+    newDropdown '/territory.php', [
+        ["/lion.php?mid=#{kingID}",        'King Overview'],
+        ["/lionoverview.php?id=#{kingID}", 'Lion Overview'],
+        ['/nesting.php',                   'Nesting'],
+    ]
+
 newDropdown '/hoard.php', [
     ['/hoard.php?type=Food',        'Food'],
     ['/hoard.php?type=Amusement',   'Amusement'],
@@ -228,8 +278,8 @@ if urlMatches new RegExp '/hunting\\.php', 'i'
 
 # Lion view {{{1
 if urlMatches new RegExp '/lion\\.php', 'i'
-    namePlateClone = findMatches('h1', 1, 1).clone()
-    lionImageClone = findMatches('center > div[style="width: 95%; overflow: auto;"]', 1, 1).clone()
+    namePlateClone   = findMatches('h1', 1, 1).clone()
+    lionImageClone   = findMatches('center > div[style="width: 95%; overflow: auto;"]', 1, 1).clone()
     chaseButtonTable = findMatches('div.col-xs-12.col-md-4', 1, 1)
     chaseButtonTable.before namePlateClone, lionImageClone, '<br>'
 
@@ -239,6 +289,17 @@ if urlMatches new RegExp '/territory\\.php', 'i'
     # Check if we're looking at another user's den. In that case there'll be
     # an 'id' parameter.
     if not (urlMatches /[?&]id=/i)
+        # Detect king ID {{{3
+        storedKingID     = GM_getValue 'kingID'
+        console.log "storedKingID: #{storedKingID}"
+        kingPortraitHref = $('#lion_image').parent().attr('href')
+        console.log "kingPortraitHref: #{kingPortraitHref}"
+        currentKingID    = /\/lion\.php\?mid=([0-9]+)/.exec(kingPortraitHref)[1]
+
+        if currentKingID != storedKingID
+            console.log "Stored king ID '#{storedKingID}' didn't match detected kingID '#{currentKingID}' at URL '#{document.location.href}'"
+            GM_setValue 'kingID', currentKingID
+
         # Rearrange interface {{{3
         GM_addStyle """
             /* Make the tables a little closer together. Website default 20px. */
@@ -298,7 +359,7 @@ if urlMatches new RegExp '/territory\\.php', 'i'
                         console.log "Couldn't play with #{id}; probably on cooldown."
                         recurse()
 
-            $('a[href^="/lionoverview.php"]').parent().after """
+            $('th a[href^="/lionoverview.php"]').parent().after """
                 <th style="text-align:center!important;"><a href="javascript:void(0)" id=autoPlay>Play with all.</a></th>
             """
 

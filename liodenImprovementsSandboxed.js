@@ -7,11 +7,13 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      7.3
+// @version      8.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
  */
 
@@ -30,7 +32,7 @@ Den:
 Lion view:
 - Can see lion name and picture right next to the chase buttons.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, lionImageClone, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, tables, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, currentKingID, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, kingID, kingPortraitHref, lionImageClone, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, storedKingID, tables, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -44,12 +46,6 @@ GM_addStyle("/* Make the top bar slimmer. */\n.main { margin-top: 10px; }\n\n/*\
 setHumanTimeout = function(f) {
   return setTimeout_(randInt(HUMAN_TIMEOUT_MIN, HUMAN_TIMEOUT_MAX), f);
 };
-
-navbar = $('.nav.visible-lg');
-
-toplinks = $('.toplinks');
-
-logout = toplinks.find('a[href="/logout.php"]');
 
 energyBar = $('div.progress:first');
 
@@ -66,22 +62,67 @@ energyBarChangeBar = $("<div class=\"progress-bar progress-bar-warning\" role=\"
 energyBar.append(energyBarChangeBar);
 
 energyUpdate = function() {
-  var energyPercent, minutes;
-  energyPercent = /Energy: ([0-9]+)%/.exec(energyBarText.text())[1];
+  var e, energyPercent, energyUpdateTime, minutes, now;
+  try {
+    energyPercent = /Energy: ([0-9]+)%/.exec(energyBarText.text())[1];
+  } catch (_error) {
+    e = _error;
+    if (e instanceof TypeError) {
+      console.log("Unable to read energy percent from " + energyBar);
+      console.log('Disabling energyUpdate');
+      return;
+    } else {
+      throw e;
+    }
+  }
   energyPercent = parseInt(energyPercent);
-  minutes = new Date(Date.now()).getMinutes();
-  minutes = 15 - (minutes % 15);
-  return setTimeout_(minutes * 60 * 1000, function() {
-    if (energyPercent < 100) {
+  now = new Date(Date.now());
+  minutes = now.getMinutes() + now.getSeconds() / 60 + now.getMilliseconds() / (1000 * 60);
+  energyUpdateTime = new Date(now);
+  console.log("now: " + now);
+  console.log("minutes: " + minutes);
+  energyUpdateTime.setSeconds(0);
+  energyUpdateTime.setMilliseconds(0);
+  if ((0 <= minutes && minutes < 15)) {
+    console.log("0 <= minutes < 15");
+    energyUpdateTime.setMinutes(15);
+  } else if ((15 <= minutes && minutes < 30)) {
+    console.log("15 <= minutes < 30");
+    energyUpdateTime.setMinutes(30);
+  } else if ((30 <= minutes && minutes < 45)) {
+    console.log("30 <= minutes < 45");
+    energyUpdateTime.setMinutes(45);
+  } else if (45 <= minutes) {
+    console.log("45 <= minutes");
+    energyUpdateTime.setMinutes(0);
+    energyUpdateTime.setHours(now.getHours() + 1);
+  }
+  console.log("Target time for energy refresh is:", energyUpdateTime);
+  console.log("That means we're waiting for " + ((energyUpdateTime - now) / (1000 * 60)) + " minutes.");
+  return setTimeout_(energyUpdateTime - now, function() {
+    if (energyPercent + 10 <= 100) {
       energyPercent += 10;
+    } else if (energyPercent < 100) {
+      console.log("Setting energyPercent to 100, from " + energyPercent);
+      energyPercent = 100;
     }
     energyBarText.text("Energy: " + energyPercent + "%");
     energyBarChangeBar.css("width", energyPercent + "%");
-    return energyUpdate();
+    if (energyPercent <= 100) {
+      return energyUpdate();
+    } else {
+      return console.log('energyPercent is > 100 so stopping energy update loop.');
+    }
   });
 };
 
 energyUpdate();
+
+navbar = $('.nav.visible-lg');
+
+toplinks = $('.toplinks');
+
+logout = toplinks.find('a[href="/logout.php"]');
 
 moveToToplinks = function(page, linkText) {
   var link;
@@ -126,6 +167,10 @@ newNavbarItem = function(page, linkText, dropdownLinks) {
     return newDropdown(navbarItem, dropdownLinks);
   }
 };
+
+if ((kingID = GM_getValue('kingID')) != null) {
+  newDropdown('/territory.php', [["/lion.php?mid=" + kingID, 'King Overview'], ["/lionoverview.php?id=" + kingID, 'Lion Overview'], ['/nesting.php', 'Nesting']]);
+}
 
 newDropdown('/hoard.php', [['/hoard.php?type=Food', 'Food'], ['/hoard.php?type=Amusement', 'Amusement'], ['/hoard.php?type=Decoration', 'Decoration'], ['/hoard.php?type=Background', 'Background'], ['/hoard.php?type=Other', 'Other'], ['/hoard.php?type=Buried', 'Buried'], ['/hoard.php?type=Bundles', 'Bundles'], ['/hoard-organisation.php', 'Organisation']]);
 
@@ -177,6 +222,15 @@ if (urlMatches(new RegExp('/lion\\.php', 'i'))) {
 
 if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
   if (!(urlMatches(/[?&]id=/i))) {
+    storedKingID = GM_getValue('kingID');
+    console.log("storedKingID: " + storedKingID);
+    kingPortraitHref = $('#lion_image').parent().attr('href');
+    console.log("kingPortraitHref: " + kingPortraitHref);
+    currentKingID = /\/lion\.php\?mid=([0-9]+)/.exec(kingPortraitHref)[1];
+    if (currentKingID !== storedKingID) {
+      console.log("Stored king ID '" + storedKingID + "' didn't match detected kingID '" + currentKingID + "' at URL '" + document.location.href + "'");
+      GM_setValue('kingID', currentKingID);
+    }
     GM_addStyle("/* Make the tables a little closer together. Website default 20px. */\n.table { margin-bottom: 10px; }");
     tables = $('div.container.main center table.table');
     ref = (function() {
@@ -274,7 +328,7 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
         })(this));
       };
 
-      $('a[href^="/lionoverview.php"]').parent().after("<th style=\"text-align:center!important;\"><a href=\"javascript:void(0)\" id=autoPlay>Play with all.</a></th>");
+      $('th a[href^="/lionoverview.php"]').parent().after("<th style=\"text-align:center!important;\"><a href=\"javascript:void(0)\" id=autoPlay>Play with all.</a></th>");
 
       lionPlayer = new LionPlayer($('#autoPlay'));
 
