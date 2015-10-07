@@ -7,7 +7,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      8.0
+// @version      9.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -32,7 +32,7 @@ Den:
 Lion view:
 - Can see lion name and picture right next to the chase buttons.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, currentKingID, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, kingID, kingPortraitHref, lionImageClone, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, setHumanTimeout, storedKingID, tables, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LAYER_INFO, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, currentKingID, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, header, i, info, item, items, j, k, kingID, kingPortraitHref, layer, layers, len, len1, lionImageClone, lionessFrame, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, opacity, pride, ref, ref1, ref2, setHumanTimeout, storedKingID, tables, textInsertArea, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -337,4 +337,97 @@ if (urlMatches(new RegExp('/territory\\.php', 'i'))) {
     })();
   }
   findMatches('h1 + br', 1, 1).remove();
+}
+
+if (urlMatches(/\/branch\.php/i)) {
+  items = $('div.item');
+  ref1 = (function() {
+    var k, len, ref1, results;
+    ref1 = items.find('b');
+    results = [];
+    for (k = 0, len = ref1.length; k < len; k++) {
+      i = ref1[k];
+      results.push($(i));
+    }
+    return results;
+  })();
+  for (j = 0, len = ref1.length; j < len; j++) {
+    item = ref1[j];
+    if (!(/[SG]B:/.exec(item.text()))) {
+      continue;
+    }
+    item.wrap("<a href=\"javascript:void(0)\"></a>");
+    item.parent().click(function(event) {
+      var a, itemName, k, len1, ref2, results, targetItem;
+      console.log('Got click event:', event);
+      a = $(event.currentTarget);
+      targetItem = a.parents('div.item');
+      console.log('targetItem:', targetItem);
+      itemName = targetItem.find('div.item-header').text();
+      console.log('itemName:', itemName);
+      ref2 = (function() {
+        var l, len1, results1;
+        results1 = [];
+        for (l = 0, len1 = items.length; l < len1; l++) {
+          i = items[l];
+          results1.push($(i));
+        }
+        return results1;
+      })();
+      results = [];
+      for (k = 0, len1 = ref2.length; k < len1; k++) {
+        i = ref2[k];
+        if (!(i.find('div.item-header').text() === itemName)) {
+          continue;
+        }
+        i.find('input[name="price[]"]').val(targetItem.find('input[name="price[]"]').val());
+        results.push(i.find('input[name="cprice[]"]').val(targetItem.find('input[name="cprice[]"]').val()));
+      }
+      return results;
+    });
+  }
+}
+
+if (urlMatches(/\/claimlioness\.php/i)) {
+  header = $((function() {
+    var k, len1, ref2, results;
+    ref2 = $('h1');
+    results = [];
+    for (k = 0, len1 = ref2.length; k < len1; k++) {
+      i = ref2[k];
+      if (/Claiming a Lioness/.exec($(i).text())) {
+        results.push(i);
+      }
+    }
+    return results;
+  })());
+  layers = header.siblings('center').find('div > img[src^="http://static.lioden.com/images/dynamic/lioness/"]');
+  lionessFrame = layers.eq(0).parent().parent();
+  textInsertArea = $("<div id=lionessInfo></div>");
+  lionessFrame.find('form[method=post] input[name=manlyroar]').parent().prepend(textInsertArea);
+  LAYER_INFO = new RegExp("^http://static\\.lioden\\.com/images/dynamic/lioness//?(.*).png$", 'i');
+  ref2 = (function() {
+    var l, len1, results;
+    results = [];
+    for (l = 0, len1 = layers.length; l < len1; l++) {
+      i = layers[l];
+      results.push($(i));
+    }
+    return results;
+  })();
+  for (k = 0, len1 = ref2.length; k < len1; k++) {
+    layer = ref2[k];
+    info = LAYER_INFO.exec(layer.attr('src'))[1];
+    if (info === 'lineart') {
+      continue;
+    }
+    if (info.indexOf('markings') >= 0) {
+      opacity = parseFloat(layer.css('opacity'));
+      opacity = Math.round(opacity * 100);
+      opacity = opacity.toString() + '%';
+      info += " (" + opacity + ")";
+    }
+    textInsertArea.append("<div>" + info + "</div>");
+  }
+  textInsertArea.append('<br>');
 }

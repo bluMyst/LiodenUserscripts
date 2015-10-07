@@ -6,7 +6,7 @@ See http://wiki.greasespot.net/Metadata_Block for more info.
 // @name         (Sandboxed) Lioden Improvements
 // @description  Adds various improvements to the game Lioden. Sandboxed portion of the script.
 // @namespace    ahto
-// @version      8.0
+// @version      9.0
 // @include      http://*.lioden.com/*
 // @include      http://lioden.com/*
 // @require      https://greasyfork.org/scripts/10922-ahto-library/code/Ahto%20Library.js?version=75750
@@ -367,3 +367,60 @@ if urlMatches new RegExp '/territory\\.php', 'i'
 
     # Make the [X]'s Den text a little more compact. {{{2
     findMatches('h1 + br', 1, 1).remove()
+
+# Branch {{{1
+if urlMatches /\/branch\.php/i
+    items = $ 'div.item'
+
+    for item in ($ i for i in items.find 'b') when /[SG]B:/.exec item.text()
+        item.wrap """
+            <a href="javascript:void(0)"></a>
+        """
+
+        item.parent().click (event) ->
+            console.log 'Got click event:', event
+            a          = $ event.currentTarget
+            targetItem = a.parents 'div.item'
+            console.log 'targetItem:', targetItem
+            itemName   = targetItem.find('div.item-header').text()
+            console.log 'itemName:', itemName
+
+            for i in ($ i for i in items) when i.find('div.item-header').text() == itemName
+                i.find('input[name="price[]"]' ).val targetItem.find('input[name="price[]"]' ).val()
+                i.find('input[name="cprice[]"]').val targetItem.find('input[name="cprice[]"]').val()
+
+# Lioness claiming {{{1
+if urlMatches /\/claimlioness\.php/i
+    # TODO: Make the HTML look prettier.
+    # TODO: Detect special colors.
+    header = $(i for i in $ 'h1' when /Claiming a Lioness/.exec $(i).text())
+
+    layers = header.siblings('center').find '
+        div > img[src^="http://static.lioden.com/images/dynamic/lioness/"]
+    '
+
+    lionessFrame = layers.eq(0).parent().parent()
+    textInsertArea = $ "<div id=lionessInfo></div>"
+
+    lionessFrame
+        .find 'form[method=post] input[name=manlyroar]'
+        .parent()
+        .prepend textInsertArea
+
+    LAYER_INFO = new RegExp "^http://static\\.lioden\\.com/images/dynamic/lioness//?(.*).png$", 'i'
+
+    for layer in ($ i for i in layers)
+        info = LAYER_INFO.exec(layer.attr 'src')[1]
+        if info == 'lineart' then continue
+
+        if info.indexOf('markings') >= 0
+            opacity = parseFloat(layer.css 'opacity')
+            opacity = Math.round(opacity * 100)
+            opacity = opacity.toString() + '%'
+            info += " (#{opacity})"
+
+        textInsertArea.append """
+            <div>#{info}</div>
+        """
+
+    textInsertArea.append '<br>'
