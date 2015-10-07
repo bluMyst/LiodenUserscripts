@@ -389,38 +389,3 @@ if urlMatches /\/branch\.php/i
                 i.find('input[name="price[]"]' ).val targetItem.find('input[name="price[]"]' ).val()
                 i.find('input[name="cprice[]"]').val targetItem.find('input[name="cprice[]"]').val()
 
-# Lioness claiming {{{1
-if urlMatches /\/claimlioness\.php/i
-    # TODO: Make the HTML look prettier.
-    # TODO: Detect special colors.
-    header = $(i for i in $ 'h1' when /Claiming a Lioness/.exec $(i).text())
-
-    layers = header.siblings('center').find '
-        div > img[src^="http://static.lioden.com/images/dynamic/lioness/"]
-    '
-
-    lionessFrame = layers.eq(0).parent().parent()
-    textInsertArea = $ "<div id=lionessInfo></div>"
-
-    lionessFrame
-        .find 'form[method=post] input[name=manlyroar]'
-        .parent()
-        .prepend textInsertArea
-
-    LAYER_INFO = new RegExp "^http://static\\.lioden\\.com/images/dynamic/lioness//?(.*).png$", 'i'
-
-    for layer in ($ i for i in layers)
-        info = LAYER_INFO.exec(layer.attr 'src')[1]
-        if info == 'lineart' then continue
-
-        if info.indexOf('markings') >= 0
-            opacity = parseFloat(layer.css 'opacity')
-            opacity = Math.round(opacity * 100)
-            opacity = opacity.toString() + '%'
-            info += " (#{opacity})"
-
-        textInsertArea.append """
-            <div>#{info}</div>
-        """
-
-    textInsertArea.append '<br>'

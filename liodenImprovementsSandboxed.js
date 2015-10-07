@@ -32,7 +32,7 @@ Den:
 Lion view:
 - Can see lion name and picture right next to the chase buttons.
  */
-var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LAYER_INFO, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, currentKingID, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, header, i, info, item, items, j, k, kingID, kingPortraitHref, layer, layers, len, len1, lionImageClone, lionessFrame, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, opacity, pride, ref, ref1, ref2, setHumanTimeout, storedKingID, tables, textInsertArea, toplinks, wait,
+var HUMAN_TIMEOUT_MAX, HUMAN_TIMEOUT_MIN, HUNT_BLINK_TIMEOUT, LionPlayer, aboutKing, aboutPlayer, blinker, chaseButtonTable, currentKingID, energyBar, energyBarBar, energyBarChangeBar, energyBarText, energyUpdate, etc, getResults, i, item, items, j, kingID, kingPortraitHref, len, lionImageClone, logout, minutesLeft, moveToToplinks, namePlateClone, navbar, newDropdown, newNavbarItem, pride, ref, ref1, setHumanTimeout, storedKingID, tables, toplinks, wait,
   slice = [].slice;
 
 HUNT_BLINK_TIMEOUT = 500;
@@ -386,48 +386,4 @@ if (urlMatches(/\/branch\.php/i)) {
       return results;
     });
   }
-}
-
-if (urlMatches(/\/claimlioness\.php/i)) {
-  header = $((function() {
-    var k, len1, ref2, results;
-    ref2 = $('h1');
-    results = [];
-    for (k = 0, len1 = ref2.length; k < len1; k++) {
-      i = ref2[k];
-      if (/Claiming a Lioness/.exec($(i).text())) {
-        results.push(i);
-      }
-    }
-    return results;
-  })());
-  layers = header.siblings('center').find('div > img[src^="http://static.lioden.com/images/dynamic/lioness/"]');
-  lionessFrame = layers.eq(0).parent().parent();
-  textInsertArea = $("<div id=lionessInfo></div>");
-  lionessFrame.find('form[method=post] input[name=manlyroar]').parent().prepend(textInsertArea);
-  LAYER_INFO = new RegExp("^http://static\\.lioden\\.com/images/dynamic/lioness//?(.*).png$", 'i');
-  ref2 = (function() {
-    var l, len1, results;
-    results = [];
-    for (l = 0, len1 = layers.length; l < len1; l++) {
-      i = layers[l];
-      results.push($(i));
-    }
-    return results;
-  })();
-  for (k = 0, len1 = ref2.length; k < len1; k++) {
-    layer = ref2[k];
-    info = LAYER_INFO.exec(layer.attr('src'))[1];
-    if (info === 'lineart') {
-      continue;
-    }
-    if (info.indexOf('markings') >= 0) {
-      opacity = parseFloat(layer.css('opacity'));
-      opacity = Math.round(opacity * 100);
-      opacity = opacity.toString() + '%';
-      info += " (" + opacity + ")";
-    }
-    textInsertArea.append("<div>" + info + "</div>");
-  }
-  textInsertArea.append('<br>');
 }
